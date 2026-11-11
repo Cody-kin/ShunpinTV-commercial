@@ -6,8 +6,8 @@ android {
   applicationId 'com.harbour.tv.store'
   minSdk 26
   targetSdk 35
-  versionCode 3
-  versionName '0.1.2-commercial-preview'
+  versionCode 4
+  versionName '0.1.3-commercial-preview'
   buildConfigField 'boolean', 'PERSONAL_BUILD', 'false'
   buildConfigField 'long', 'STARTUP_TIMEOUT_MS', '45000L'
   buildConfigField 'String', 'HTTP_PLAYBACK_HOSTS', '""'

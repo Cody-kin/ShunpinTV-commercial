@@ -35,14 +35,18 @@ public final class LineRepairActivity extends Activity {
  private void message(String text){ui.post(()->{if(!isDestroyed())status.setText(text);});}
  private void start(boolean fix){start(fix,3000);}
  private void start(boolean fix,long observationMs){if(task!=null&&!task.isDone())return;cancelled=false;check.setEnabled(false);repair.setEnabled(false);results.setText("");
-  task=worker.submit(()->{JSONArray report=new JSONArray();try{
+  task=worker.submit(()->{JSONArray report=new JSONArray();String discoverySummary="";try{
    CatalogRepository before=new CatalogRepository(this);Set<String> failedKeys=new HashSet<>();for(Catalog.Channel c:before.catalog.channels)if(health.failed(c.id))failedKeys.add(CatalogRepository.stationKey(c));
    if(fix){message("正在更新已設定的來源訂閱…");refreshSubscriptions();
     if(!cancelled&&BuildConfig.PERSONAL_BUILD){Set<String> sought=new HashSet<>(failedKeys);if(sought.isEmpty())for(Catalog.Channel c:before.catalog.channels)if(c.id.startsWith("user-"))sought.add(CatalogRepository.stationKey(c));
-      message("正在公開目錄尋找同名備選，隨後逐條實播…");try{RepairDiscovery.refresh(this,sought);}catch(Exception ignored){message("搜尋目錄暫不可用，使用已有備選繼續檢查…");}}
+      message("正在公開目錄尋找同名備選，隨後逐條實播…");try{RepairDiscovery.refresh(this,sought);
+       android.content.SharedPreferences network=getSharedPreferences("repair_discovery",0);
+       discoverySummary="公開目錄更新 "+network.getInt("downloaded",0)+"／"+network.getInt("attempted",0)+" 份。";
+       if(network.getInt("downloaded",0)==0)discoverySummary+="未取得新目錄，使用原有線路檢查。";
+      }catch(Exception ignored){message("搜尋目錄暫不可用，使用已有備選繼續檢查…");}}
    }
    CatalogRepository repo=new CatalogRepository(this);Set<String> seen=new HashSet<>();List<Catalog.Channel> channels=new ArrayList<>();
-   for(Catalog.Channel c:repo.catalog.channels)if(c.id.startsWith("user-")&&!c.sources.isEmpty()&&seen.add(CatalogRepository.stationKey(c))&&(getIntent().getStringExtra("channel_id")==null||c.id.equals(getIntent().getStringExtra("channel_id")))&&(!fix||failedKeys.isEmpty()||failedKeys.contains(CatalogRepository.stationKey(c))))channels.add(repo.playbackChannel(c));
+   for(Catalog.Channel c:repo.catalog.channels)if(c.id.startsWith("user-")&&!c.sources.isEmpty()&&(getIntent().getStringExtra("channel_id")==null||c.id.equals(getIntent().getStringExtra("channel_id")))&&seen.add(CatalogRepository.stationKey(c))&&(!fix||failedKeys.isEmpty()||failedKeys.contains(CatalogRepository.stationKey(c))))channels.add(repo.playbackChannel(c));
    int index=0;for(Catalog.Channel channel:channels){if(cancelled||Thread.currentThread().isInterrupted())break;index++;boolean ok=false;int passedLines=0;int tried=0;String reason="沒有可用線路";
     for(Catalog.Source source:channel.sources){if(cancelled||Thread.currentThread().isInterrupted())break;tried++;message(index+"／"+channels.size()+" · "+channel.name+" · 測試線路 "+tried+"／"+channel.sources.size());
      String blocked=source.blockedReason(getSharedPreferences("harbour",0).getString("territory","HK"),Instant.now());
@@ -51,7 +55,7 @@ public final class LineRepairActivity extends Activity {
     if(cancelled)break;for(Catalog.Channel peer:repo.catalog.channels)if(CatalogRepository.stationKey(peer).equals(CatalogRepository.stationKey(channel)))health.channelFailed(peer.id,!ok);
     JSONObject row=new JSONObject().put("name",channel.name).put("channelId",channel.id).put("tested",tried).put("lines",channel.sources.size()).put("passed",ok).put("passedLines",passedLines).put("observationSeconds",observationMs/1000).put("result",reason).put("time",Instant.now().toString());report.put(row);health.report(report);String line=channel.name+" · "+reason+"（已測 "+tried+" 條）\n";ui.post(()->{if(!isDestroyed())results.append(line);});
    }
-   message(cancelled?"已停止；保留已完成的檢查結果。":"完成 "+report.length()+" 台。通過是本次短時觀察，不保證長時間穩定。");
+   message(cancelled?"已停止；保留已完成的檢查結果。":"完成 "+report.length()+" 台。"+discoverySummary+"通過僅代表本次觀察；未核對台標與聲音。");
   }catch(InterruptedException e){Thread.currentThread().interrupt();message("已停止。");}catch(Exception e){message("檢查未完成；原有清單保留。可重試。");}finally{ui.post(()->{release();if(!isDestroyed()){check.setEnabled(true);repair.setEnabled(true);setResult(RESULT_OK);}});}});
  }
  private void refreshSubscriptions() throws Exception {

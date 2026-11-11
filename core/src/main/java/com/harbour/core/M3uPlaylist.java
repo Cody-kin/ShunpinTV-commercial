@@ -60,7 +60,8 @@ public final class M3uPlaylist {
           || declared.equals("application/vnd.apple.mpegurl")
           || declared.equals("application/dash+xml")
           || declared.equals("video/mp4")
-          || declared.equals("video/mp2t")) return declared;
+          || declared.equals("video/mp2t")
+          || declared.equals("video/x-flv")) return declared;
       String path;
       try {
         path = URI.create(uri).getPath().toLowerCase(Locale.ROOT);
@@ -71,6 +72,7 @@ public final class M3uPlaylist {
       if (path.endsWith(".mpd")) return "application/dash+xml";
       if (path.endsWith(".mp4")) return "video/mp4";
       if (path.endsWith(".ts")) return "video/mp2t";
+      if (path.endsWith(".flv")) return "video/x-flv";
       return "application/octet-stream";
     }
   }
@@ -122,11 +124,14 @@ public final class M3uPlaylist {
     }
     if (safeName.length() > 200) safeName = safeName.substring(0, 200);
     Map<String, String> attributes = new LinkedHashMap<>();
-    attributes.put("type", "application/x-mpegURL");
+    String path = stream.getPath() == null ? "" : stream.getPath().toLowerCase(Locale.ROOT);
+    String type = path.endsWith(".ts") ? "video/mp2t" : path.endsWith(".flv") ? "video/x-flv"
+        : path.endsWith(".mp4") ? "video/mp4" : path.endsWith(".mpd") ? "application/dash+xml" : "application/x-mpegURL";
+    attributes.put("type", type);
     return new Entry(
         safeName,
         stream.toString(),
-        "#EXTINF:-1 type=\"application/x-mpegURL\"," + safeName + "\n",
+        "#EXTINF:-1 type=\"" + type + "\"," + safeName + "\n",
         attributes);
   }
 

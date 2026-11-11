@@ -101,7 +101,11 @@ final class CatalogRepository {
                 data.getString("sourceReference"),
                 Instant.parse(data.getString("updatedAt")),
                 channels));
-    catalog = bindings.apply(imported, presetIds);
+    // Retire the unavailable Jade listing, including subscription copies, without deleting saved sources.
+    List<Catalog.Channel> visible = new ArrayList<>();
+    for (Catalog.Channel channel : imported.channels)
+      if (!stationKey(channel).equals("station-name-翡翠台")) visible.add(channel);
+    catalog = bindings.apply(new Catalog(imported.provider, imported.sourceReference, imported.updatedAt, visible), presetIds);
     Map<String, String> classified = new LinkedHashMap<>(presetGroups);
     for (Catalog.Channel channel : catalog.channels) {
       if (!presetIds.contains(channel.id)) classified.put(channel.id,
@@ -152,7 +156,13 @@ final class CatalogRepository {
       String alias=normalized.replaceAll("\\((?:[0-9]+[PI]|HD|SD)\\)", "").replace("[GEO-BLOCKED]", "");
       if(alias.equals("PHOENIXCHINESECHANNEL")||alias.equals("凤凰中文")||alias.equals("凤凰中文台")||alias.equals("鳳凰中文台"))normalized="凤凰中文";
       if(alias.equals("PHOENIXINFONEWSCHANNEL")||alias.equals("凤凰资讯")||alias.equals("凤凰资讯台")||alias.equals("鳳凰資訊台"))normalized="凤凰资讯";
-      if(alias.matches("RTHKTV3[1-5]"))normalized=alias;
+      if(alias.equals("PHOENIXHONGKONGCHANNEL")||alias.equals("凤凰香港")||alias.equals("凤凰香港台")||alias.equals("鳳凰香港台"))normalized="凤凰香港";
+      if(alias.equals("JADE")||alias.equals("翡翠台")||alias.equals("TVB翡翠台"))normalized="翡翠台";
+      if(alias.equals("PEARL")||alias.equals("明珠台")||alias.equals("TVB明珠台"))normalized="明珠台";
+      if(alias.equals("HOYTV")||alias.equals("HOY77"))normalized="HOYTV";
+      if(alias.equals("VIUTV"))normalized="VIUTV";
+      if(java.util.Arrays.asList("无线新闻","无线新闻台","無線新聞台","無綫新聞台","TVBNEWS","TVBNEWCHANNEL","TVBNEWSCHANNEL","TVB无线新闻台").contains(alias))normalized="TVBNEWS";
+      if(alias.matches("RTHK(?:TV)?3[1-5]"))normalized=alias.replaceFirst("RTHK(?:TV)?", "RTHKTV");
 
       return normalized.isEmpty()?c.id:"station-name-"+normalized;
     }
