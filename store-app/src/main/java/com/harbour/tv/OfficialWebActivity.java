@@ -34,6 +34,38 @@ public final class OfficialWebActivity extends Activity {
   private TextView status;
   private Button officialGuideButton;
   private WebView web;
+  private RemotePointer pointer;
+  private boolean pointerMode;
+  private float pointerX, pointerY;
+  private final class RemotePointer extends View {
+    private final android.graphics.Paint paint=new android.graphics.Paint(3);
+    RemotePointer(){super(OfficialWebActivity.this);setFocusable(false);setClickable(false);setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);}
+    @Override protected void onDraw(android.graphics.Canvas canvas){super.onDraw(canvas);paint.setColor(Color.BLACK);canvas.drawCircle(pointerX,pointerY,dp(10),paint);paint.setColor(0xFF61E6CC);canvas.drawCircle(pointerX,pointerY,dp(7),paint);paint.setColor(Color.WHITE);canvas.drawCircle(pointerX,pointerY,dp(2),paint);}
+  }
+  private void enablePointer(){
+    interacting=false;hideMenu();pointerMode=true;
+    pointerX=root.getWidth()/2f;pointerY=root.getHeight()/2f;
+    pointer.setVisibility(View.VISIBLE);pointer.bringToFront();pointer.invalidate();
+    status.setText("滑鼠：方向鍵移動 · OK 點擊 · 返回／MENU 工具選單");
+  }
+  private void stopPointer(){pointerMode=false;if(pointer!=null)pointer.setVisibility(View.GONE);}
+  private void clickPointer(){
+    View target=customView!=null?customView:web;if(target==null)return;
+    int[] host=new int[2],origin=new int[2];root.getLocationOnScreen(host);target.getLocationOnScreen(origin);
+    float x=pointerX+host[0]-origin[0],y=pointerY+host[1]-origin[1];
+    if(x<0||y<0||x>=target.getWidth()||y>=target.getHeight())return;
+    long now=android.os.SystemClock.uptimeMillis();
+    android.view.MotionEvent down=android.view.MotionEvent.obtain(now,now,android.view.MotionEvent.ACTION_DOWN,x,y,0);
+    android.view.MotionEvent up=android.view.MotionEvent.obtain(now,now+40,android.view.MotionEvent.ACTION_UP,x,y,0);
+    try{target.dispatchTouchEvent(down);target.dispatchTouchEvent(up);}finally{down.recycle();up.recycle();}
+  }
+  private void requestVideoFullscreen(){
+    if(customView!=null){hideMenu();return;}
+    if(web==null||!isAllowedUrl(web.getUrl()))return;
+    web.evaluateJavascript("(function(){var v=Array.from(document.querySelectorAll('video')).find(function(v){var r=v.getBoundingClientRect();return r.width>0&&r.height>0;});if(!v)return 'missing';var f=v.requestFullscreen||v.webkitRequestFullscreen;if(!f)return 'unsupported';try{var p=f.call(v);if(p&&p.catch)p.catch(function(){});return 'requested';}catch(e){return 'denied';}})()",result->{
+      hideMenu();status.setText("已請求影片全屏；若網站沒有回應，開啟滑鼠點擊原播放器的全屏按鈕。隔離影片需使用網站自己的按鈕。");
+    });
+  }
   private String currentUrl = HOME_URL;
   private boolean autoplayAuthorized;
   private int pageGeneration;
@@ -168,6 +200,10 @@ public final class OfficialWebActivity extends Activity {
     status.setBackgroundColor(0xFF102333);
     root.addView(status, new FrameLayout.LayoutParams(-1, dp(62), Gravity.TOP));
     buildMenu();
+    pointer=new RemotePointer();root.addView(pointer,new FrameLayout.LayoutParams(-1,-1));pointer.setVisibility(View.GONE);
+    Button tools=new Button(this);tools.setText("網頁工具");tools.setContentDescription("網頁工具：滑鼠、全屏、縮放與重載");tools.setOnClickListener(v->showMenu());
+    root.addView(tools,new FrameLayout.LayoutParams(dp(118),dp(54),Gravity.TOP|Gravity.RIGHT));
+    status.setPadding(dp(18),dp(8),dp(126),dp(8));
     String requested =
         state == null ? getIntent().getStringExtra(EXTRA_URL) : state.getString("url");
     boolean restoring = requested == null || state != null;
@@ -213,6 +249,7 @@ public final class OfficialWebActivity extends Activity {
               customViewCallback = callback;
               root.addView(view, new FrameLayout.LayoutParams(-1, -1));
               webHost.setVisibility(View.INVISIBLE);
+              if(pointerMode){pointer.bringToFront();}
               status.setVisibility(View.GONE);
               if (menuVisible()) ((View) menu.getParent()).bringToFront();
             }
@@ -396,10 +433,17 @@ public final class OfficialWebActivity extends Activity {
     menu.setPadding(dp(16), dp(12), dp(16), dp(12));
     menu.setBackgroundColor(0xF5102333);
     TextView title = new TextView(this);
-    title.setText("官方直播操作\n保留原站廣告、登入與地區限制");
+    title.setText("網頁觀看工具\n滑鼠操作與影片顯示");
     title.setTextSize(17);
     title.setTextColor(Color.WHITE);
     menu.addView(title);
+    addButton("遙控滑鼠 · 方向移動／OK 點擊", this::enablePointer);
+    addButton("影片全屏", this::requestVideoFullscreen);
+    addButton("退出影片全屏", ()->{hideCustomView();hideMenu();});
+    addButton("網頁放大", ()->{if(web!=null)web.zoomBy(1.25f);hideMenu();});
+    addButton("網頁縮小", ()->{if(web!=null)web.zoomBy(0.8f);hideMenu();});
+    addButton("網頁向下捲動", ()->{if(web!=null)web.scrollBy(0,web.getHeight()/2);hideMenu();});
+    addButton("網頁向上捲動", ()->{if(web!=null)web.scrollBy(0,-web.getHeight()/2);hideMenu();});
     addButton("繼續觀看", this::hideMenu);
     addButton("返回首頁", () -> {
       startActivity(new Intent(this, MainActivity.class).putExtra("open_home", true)
@@ -511,6 +555,7 @@ public final class OfficialWebActivity extends Activity {
   }
 
   private void showMenu() {
+    stopPointer();
     interacting = false;
     View parent = (View) menu.getParent();
     parent.setVisibility(View.VISIBLE);
@@ -538,6 +583,16 @@ public final class OfficialWebActivity extends Activity {
       if (event.getAction() == KeyEvent.ACTION_UP) consumeCenterUp = false;
       return true;
     }
+    if(pointerMode && !menuVisible() && (center || (key>=KeyEvent.KEYCODE_DPAD_UP && key<=KeyEvent.KEYCODE_DPAD_RIGHT))) {
+      if(event.getAction()==KeyEvent.ACTION_DOWN){
+        if(center){if(event.getRepeatCount()==0)clickPointer();}
+        else {float step=dp(event.getRepeatCount()>5?20:10);
+          if(key==KeyEvent.KEYCODE_DPAD_LEFT)pointerX-=step;if(key==KeyEvent.KEYCODE_DPAD_RIGHT)pointerX+=step;
+          if(key==KeyEvent.KEYCODE_DPAD_UP)pointerY-=step;if(key==KeyEvent.KEYCODE_DPAD_DOWN)pointerY+=step;
+          pointerX=Math.max(dp(10),Math.min(root.getWidth()-dp(10),pointerX));pointerY=Math.max(dp(10),Math.min(root.getHeight()-dp(10),pointerY));pointer.invalidate();
+        }
+      }return true;
+    }
     if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
       if (key == KeyEvent.KEYCODE_BACK) {
         consumeBackUp = true;
@@ -564,6 +619,7 @@ public final class OfficialWebActivity extends Activity {
   @Override
   public void onBackPressed() {
     if (menuVisible()) { hideMenu(); return; }
+    if(pointerMode){showMenu();return;}
     if (interacting) { interacting = false; showMenu(); return; }
     if (customView != null) { hideCustomView(); return; }
     finish();
