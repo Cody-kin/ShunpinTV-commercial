@@ -46,6 +46,7 @@ public final class MainActivity extends Activity {
   private boolean fullScreen, hasResults = true, resumeWantsPlayback = true, resumeTerminal;
   private FrameLayout root, previewHost, fullHost;
   private LinearLayout content, channelList;
+  private LinearLayout homeAdSlot;
   private TextView heading,
       detail,
       guide,
@@ -468,8 +469,8 @@ public final class MainActivity extends Activity {
     sourceShortcut.setContentDescription("來源管理，匯入與整理自備片單");
     addShelf(shelf, "頻道整理", "文件夾／移動／刪除", 0xFF50445E, () -> openChannelLibrary(null));
     if (BuildConfig.PERSONAL_BUILD) addShelf(shelf, "直播片單", "八份訂閱／選台", 0xFF4D4B42, this::openRequestedCctv);
-    else addShelf(shelf, "本地指令", "搜尋／選台／收藏", 0xFF4D4B42,
-        () -> startActivity(new android.content.Intent(this, LocalCommandActivity.class)));
+    else addShelf(shelf, "GitHub 片單", "一鍵拉取／記住網址", 0xFF4D4B42,
+        () -> sourceManager.openGithubPlaylist());
     addShelf(shelf, "播放診斷", "目前頻道／來源狀態", 0xFF354969, () -> showProgramPanel(playingId));
     // Explicit neighbors keep the central play/import action easy to reach with a TV remote.
     homePreview.setNextFocusUpId(live.getId());
@@ -487,6 +488,9 @@ public final class MainActivity extends Activity {
     privacy = text("方向鍵移動  ·  OK 確認  ·  返回逐層退出  ·  自備來源依使用權播放", 12, MUTED);
     privacy.setPadding(0, dp(8), 0, 0);
     content.addView(privacy);
+    homeAdSlot = row();
+    content.addView(homeAdSlot, new LinearLayout.LayoutParams(-1, dp(40)));
+    updateHomeAdPreview();
     // Detail/search model controls stay available to existing dialogs; the homepage remains
     // uncluttered.
     channelList = column();
@@ -775,12 +779,34 @@ public final class MainActivity extends Activity {
       }).show();
   }
 
+  private void updateHomeAdPreview() {
+    if (homeAdSlot == null) return;
+    homeAdSlot.removeAllViews();
+    boolean visible = !BuildConfig.PERSONAL_BUILD && prefs.getBoolean("home_ad_preview", false);
+    homeAdSlot.setVisibility(visible ? View.VISIBLE : View.GONE);
+    if (!visible) return;
+    homeAdSlot.setBackgroundColor(SURFACE);
+    TextView label = text("廣告 · 版位預覽（未投放）", 14, MUTED);
+    label.setGravity(Gravity.CENTER_VERTICAL);
+    homeAdSlot.addView(label, new LinearLayout.LayoutParams(0, -1, 1));
+    homeAdSlot.addView(button("關閉", () -> {
+      prefs.edit().putBoolean("home_ad_preview", false).apply();
+      updateHomeAdPreview();
+      sourceShortcut.requestFocus();
+    }), new LinearLayout.LayoutParams(dp(100), -1));
+  }
+
   private void showSettings() {
     new AlertDialog.Builder(this)
         .setTitle("設定與說明")
         .setItems(
-            new String[] {"測試地區：" + territory, "素材、AI 與隱私說明", "清除收藏", "HTTP 播放：" + (new HttpPlaybackConsent(this).globalEnabled()?"開啟":"關閉"), "線路自檢／修復" },
+            new String[] {"測試地區：" + territory, "素材、AI 與隱私說明", "清除收藏", "HTTP 播放：" + (new HttpPlaybackConsent(this).globalEnabled()?"開啟":"關閉"), "線路自檢／修復", "首頁廣告版位預覽" },
             (d, which) -> {
+              if (which == 5) {
+                if(BuildConfig.PERSONAL_BUILD) { Toast.makeText(this,"個人版不顯示廣告",Toast.LENGTH_SHORT).show(); return; }
+                prefs.edit().putBoolean("home_ad_preview", !prefs.getBoolean("home_ad_preview",false)).apply();
+                updateHomeAdPreview(); return;
+              }
               if (which == 4) { startActivityForResult(new android.content.Intent(this,LineRepairActivity.class),2404);return; }
               if (which == 3) { if(BuildConfig.PERSONAL_BUILD)showHttpSettings(null);else Toast.makeText(this,"商業預覽僅使用 HTTPS 來源",Toast.LENGTH_SHORT).show();return; }
               if (which == 0)

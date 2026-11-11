@@ -4,5 +4,11 @@
   "adServer": null,
   "authorizedCueProvider": null,
   "replacementRightsDocumented": false,
-  "note": "No ad requests, tracking, or broadcaster-ad replacement in this preview."
+  "note": "No ad requests, tracking, or broadcaster-ad replacement in this preview.",
+  "placements": [
+    "home_banner"
+  ],
+  "playbackOverlayEnabled": false,
+  "previewSetting": "home_ad_preview",
+  "collapseWhenEmpty": true
 }

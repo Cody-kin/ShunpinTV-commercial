@@ -109,6 +109,8 @@ public final class SourceManager {
                 .setPositiveButton("貼上文字",(d,w)->paste()).setNeutralButton("匯入網址",(d,w)->fromUrl()).setNegativeButton("返回",null).show();
             }));
     left.addView(button("匯入 M3U／HLS 網址", v -> fromUrl()));
+    left.addView(button("GitHub 片單 · 一鍵拉取", v -> openGithubPlaylist()));
+    left.addView(button("更改 GitHub 片單網址", v -> editGithubPlaylist()));
     if (BuildConfig.PERSONAL_BUILD) left.addView(button("個人測試 · 常用片單", v -> personalPlaylists()));
     Button sampleButton = button("Mux 測試影片 · 非直播", v -> offerNetworkSample());
     sampleButton.setContentDescription("播放 Mux 公開測試影片（非直播）");
@@ -587,6 +589,34 @@ public final class SourceManager {
         || u.getFragment() != null || value.length() > 8192)
       throw new IllegalArgumentException("請輸入完整 HTTP 網址，不含主機帳密或片段標記。");
     return M3uPlaylist.parse("#EXTM3U\n#EXTINF:-1,自備 HTTP 來源 · " + u.getHost() + "\n" + value + "\n").get(0);
+  }
+
+  public void openGithubPlaylist() {
+    android.content.SharedPreferences saved = activity.getSharedPreferences("github_playlist", 0);
+    String url = saved.getString("url", "");
+    if (url.isEmpty()) { editGithubPlaylist(); return; }
+    download(url,null);
+  }
+
+  private void editGithubPlaylist() {
+    android.content.SharedPreferences saved = activity.getSharedPreferences("github_playlist", 0);
+    EditText input = new EditText(activity);
+    input.setSingleLine(true);
+    input.setHint("https://github.com/…/blob/main/channels.m3u");
+    input.setText(saved.getString("url", ""));
+    AlertDialog prompt = new AlertDialog.Builder(activity).setTitle("保存 GitHub 片單")
+      .setMessage("支援 GitHub 檔案頁或 raw 網址；請填入你有權使用的 M3U 清單。")
+      .setView(input).setPositiveButton("保存並拉取",null).setNegativeButton("取消",null).create();
+    prompt.setOnShowListener(v -> prompt.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(button -> {
+      String entered=input.getText().toString().trim();
+      try {
+        URI uri=URI.create(normalizePlaylistUrl(entered));
+        if(!"https".equalsIgnoreCase(uri.getScheme()) || !"raw.githubusercontent.com".equalsIgnoreCase(uri.getHost())
+            || uri.getUserInfo()!=null || uri.getFragment()!=null) throw new IllegalArgumentException();
+        saved.edit().putString("url",entered).apply(); prompt.dismiss(); download(entered,null);
+      } catch (IllegalArgumentException ex) { input.setError("請填入完整 GitHub 檔案頁或 raw HTTPS 網址"); }
+    }));
+    prompt.show();
   }
 
   public void openCctvPlaylist() { download("https://github.com/best-fan/iptv-sources/blob/main/cn_cctv.m3u8", null); }

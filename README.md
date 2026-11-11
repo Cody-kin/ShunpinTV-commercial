@@ -29,3 +29,9 @@ Before publishing: complete content/provider permissions, signing, store listing
 ## Source terms
 
 No new open-source license is granted for original project code by this publication alone. Third-party files retain their own license notices. Consult the repository owner before redistribution or commercial reuse.
+
+## Home banner and GitHub shortcut
+
+Settings can enable a clearly labelled local home-banner preview, closed with the remote. No ad network requests or tracking occur. Empty/unconfigured placements occupy no space. Full-screen playback has no banner, preserving subtitles and the picture. A compatible TV advertising provider and account are still needed for real campaigns.
+
+The home GitHub tile and Source Manager remember a user-supplied GitHub blob/raw playlist URL, download it and present the existing import preview. A failed download preserves existing channels. Public channel playlist availability is not evidence of commercial content distribution rights; this commercial snapshot still bundles no CCTV streams. Personal builds retain their existing CCTV presets.
