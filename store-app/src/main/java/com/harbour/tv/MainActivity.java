@@ -1413,9 +1413,9 @@ public final class MainActivity extends Activity {
       if (!drawerCategory.equals("收藏") && !repo.matchesCategory(c.id, drawerCategory)) continue;
       channels.add(c);
     }
-    channels.sort(java.util.Comparator.comparingInt(repo::channelRank));
     java.util.Set<String> stationKeys=new java.util.HashSet<>();
     channels.removeIf(c -> !stationKeys.add(CatalogRepository.stationKey(c)));
+    channels.sort(java.util.Comparator.comparingInt(repo::channelRank));
     list.setTag(!channels.isEmpty());
     list.setAdapter(
         new BaseAdapter() {

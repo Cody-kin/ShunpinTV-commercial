@@ -37,6 +37,7 @@ final class PlaybackController {
   private long startedAt;
   private boolean closed, firstFrame, terminal, desiredPlay;
   private Runnable timeout, pendingRetry, rightsExpiry, evidenceTick;
+  private final RebufferWindow rebufferWindow = new RebufferWindow();
   private final ContinuousPlaybackCheck continuousCheck = new ContinuousPlaybackCheck();
 
   private void beginPlaybackObservation(Catalog.Source source) {
@@ -69,7 +70,8 @@ final class PlaybackController {
         new ExoPlayer.Builder(context)
             .setLoadControl(
                 new DefaultLoadControl.Builder()
-                    .setBufferDurationsMs(5000, 30000, 1000, 2000)
+                    .setBufferDurationsMs(15000, 45000, 2000, 5000)
+                    .setTargetBufferBytes(24 * 1024 * 1024)
                     .build())
             .build();
     player.setAudioAttributes(
@@ -88,9 +90,14 @@ final class PlaybackController {
             if (closed || terminal) return;
             if (state != Player.STATE_READY) continuousCheck.reset();
             if (state == Player.STATE_BUFFERING) {
+              if(firstFrame && desiredPlay)rebufferWindow.buffering(SystemClock.elapsedRealtime());
               observer.onStatus(desiredPlay ? "正在緩衝…" : "已暫停 · 按 OK 開啟選單繼續");
               if (desiredPlay) armWatchdog();
             } else if (state == Player.STATE_READY) {
+              if(desiredPlay && rebufferWindow.ready(SystemClock.elapsedRealtime()) && sourceIndex+1<sources.size()) {
+                new LineHealthStore(appContext).record(sources.get(sourceIndex).uri,false);
+                fail(RecoveryPolicy.Fault.UNSTABLE);return;
+              }
               cancelWatchdog();
               observer.onStatus(
                   !desiredPlay
@@ -191,6 +198,7 @@ final class PlaybackController {
 
   private void prepareSource() {
     if (closed || terminal) return;
+    rebufferWindow.reset();
     Catalog.Source source = sources.get(sourceIndex);
     String blocked = source.blockedReason(territory, Instant.now());
     if (blocked != null) {
@@ -336,6 +344,7 @@ final class PlaybackController {
     if (closed || terminal) return;
     desiredPlay = !paused;
     if (paused) {
+      rebufferWindow.reset();
       cancelWatchdog();
       if (pendingRetry != null) handler.removeCallbacks(pendingRetry);
       pendingRetry = null;

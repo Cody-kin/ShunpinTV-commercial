@@ -11,7 +11,7 @@ final class RepairDiscovery {
   String text=HttpsPlaylistFetcher.fetch(FEED).text;List<M3uPlaylist.Entry> incoming=new ArrayList<>();Set<String> seen=new HashSet<>();Map<String,Integer> counts=new HashMap<>();
   for(String line:text.split("\\r?\\n")){int comma=line.indexOf(',');if(comma<1)continue;String name=line.substring(0,comma).trim(),url=line.substring(comma+1).trim();if(!(url.startsWith("https://")||url.startsWith("http://")))continue;
    String key=CatalogRepository.stationKey(new Catalog.Channel("user-discovery","0",name,Catalog.Category.ALL,"zh","candidate","#000000",Collections.emptyList()));
-   if(!requestedKeys.contains(key)||counts.getOrDefault(key,0)>=5||!seen.add(url))continue;
+   if(!requestedKeys.contains(key)||counts.getOrDefault(key,0)>=8||!seen.add(url))continue;
    try{java.net.URI uri=java.net.URI.create(url);if(uri.getHost()==null||uri.getUserInfo()!=null||uri.getFragment()!=null)continue;incoming.add(M3uPlaylist.fromStreamUrl(name,url));counts.put(key,counts.getOrDefault(key,0)+1);}catch(IllegalArgumentException ignored){}
   }
   if(incoming.isEmpty())return 0;PlaylistSubscriptions store=new PlaylistSubscriptions(context);String origin="修復搜尋候選 · "+FEED,batch=null;JSONArray bs=store.batches();for(int i=0;i<bs.length();i++)if(origin.equals(bs.getJSONObject(i).optString("origin")))batch=bs.getJSONObject(i).getString("id");

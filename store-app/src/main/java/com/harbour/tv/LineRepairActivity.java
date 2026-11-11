@@ -41,13 +41,13 @@ public final class LineRepairActivity extends Activity {
    }
    CatalogRepository repo=new CatalogRepository(this);Set<String> seen=new HashSet<>();List<Catalog.Channel> channels=new ArrayList<>();
    for(Catalog.Channel c:repo.catalog.channels)if(c.id.startsWith("user-")&&!c.sources.isEmpty()&&seen.add(CatalogRepository.stationKey(c))&&(getIntent().getStringExtra("channel_id")==null||c.id.equals(getIntent().getStringExtra("channel_id")))&&(!fix||failedKeys.isEmpty()||failedKeys.contains(CatalogRepository.stationKey(c))))channels.add(repo.playbackChannel(c));
-   int index=0;for(Catalog.Channel channel:channels){if(cancelled||Thread.currentThread().isInterrupted())break;index++;boolean ok=false;int tried=0;String reason="沒有可用線路";
+   int index=0;for(Catalog.Channel channel:channels){if(cancelled||Thread.currentThread().isInterrupted())break;index++;boolean ok=false;int passedLines=0;int tried=0;String reason="沒有可用線路";
     for(Catalog.Source source:channel.sources){if(cancelled||Thread.currentThread().isInterrupted())break;tried++;message(index+"／"+channels.size()+" · "+channel.name+" · 測試線路 "+tried+"／"+channel.sources.size());
      String blocked=source.blockedReason(getSharedPreferences("harbour",0).getString("territory","HK"),Instant.now());
-     if(blocked!=null){reason=blocked;continue;}ok=decode(source);if(cancelled)break;health.record(source.uri,ok);if(ok){reason="畫面連播 3 秒通過 · 聲音未測";break;}reason="本次未能連播 3 秒（逾時／來源／格式問題）";
+     if(blocked!=null){reason=blocked;continue;}boolean linePassed=decode(source);if(cancelled)break;health.record(source.uri,linePassed);if(linePassed){ok=true;passedLines++;reason="已有 "+passedLines+" 條畫面連播 3 秒通過 · 聲音未測";if(passedLines>=2)break;}else if(!ok)reason="本次未能連播 3 秒（逾時／來源／格式問題）";
     }
     if(cancelled)break;for(Catalog.Channel peer:repo.catalog.channels)if(CatalogRepository.stationKey(peer).equals(CatalogRepository.stationKey(channel)))health.channelFailed(peer.id,!ok);
-    JSONObject row=new JSONObject().put("name",channel.name).put("channelId",channel.id).put("tested",tried).put("lines",channel.sources.size()).put("passed",ok).put("result",reason).put("time",Instant.now().toString());report.put(row);health.report(report);String line=channel.name+" · "+reason+"（已測 "+tried+" 條）\n";ui.post(()->{if(!isDestroyed())results.append(line);});
+    JSONObject row=new JSONObject().put("name",channel.name).put("channelId",channel.id).put("tested",tried).put("lines",channel.sources.size()).put("passed",ok).put("passedLines",passedLines).put("result",reason).put("time",Instant.now().toString());report.put(row);health.report(report);String line=channel.name+" · "+reason+"（已測 "+tried+" 條）\n";ui.post(()->{if(!isDestroyed())results.append(line);});
    }
    message(cancelled?"已停止；保留已完成的檢查結果。":"完成 "+report.length()+" 台。通過是本次短時觀察，不保證長時間穩定。");
   }catch(InterruptedException e){Thread.currentThread().interrupt();message("已停止。");}catch(Exception e){message("檢查未完成；原有清單保留。可重試。");}finally{ui.post(()->{release();if(!isDestroyed()){check.setEnabled(true);repair.setEnabled(true);setResult(RESULT_OK);}});}});

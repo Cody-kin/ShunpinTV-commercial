@@ -18,6 +18,8 @@ final class CatalogRepository {
   private final Context context;
   private final Map<String,List<Catalog.Source>> stationSources=new LinkedHashMap<>();
   private final Map<String,Catalog.Channel> mergedChannels=new HashMap<>();
+  private final Map<String,Integer> sourceRanks=new HashMap<>();
+  private final Map<String,Integer> stationRanks=new HashMap<>();
   final Catalog catalog;
   final Guide guide;
   final Map<String, String> groups;
@@ -125,6 +127,15 @@ final class CatalogRepository {
     guide = new Guide(programs, catalog);
     for(Catalog.Channel channel:catalog.channels)if(channel.id.startsWith("user-"))
       stationSources.computeIfAbsent(stationKey(channel),key->new ArrayList<>()).addAll(channel.sources);
+    // Constructed on the catalog worker: never build merged channel objects just to sort a menu.
+    for(Map.Entry<String,List<Catalog.Source>> entry:stationSources.entrySet()) {
+      LinkedHashMap<String,Catalog.Source> unique=new LinkedHashMap<>();
+      for(Catalog.Source source:entry.getValue())unique.putIfAbsent(source.uri,source);
+      List<Catalog.Source> ordered=new ArrayList<>(unique.values());
+      ordered.sort(Comparator.comparingInt(this::sourceRank));
+      entry.setValue(Collections.unmodifiableList(ordered));
+      stationRanks.put(entry.getKey(),ordered.isEmpty()?3:sourceRank(ordered.get(0)));
+    }
   }
   // Conservative station identity: do not combine regional CCTV-4, UHD or language editions.
   static String stationKey(Catalog.Channel c) {
@@ -161,12 +172,13 @@ final class CatalogRepository {
   }
 
   private int sourceRank(Catalog.Source source) {
-    int recent=new LineHealthStore(context).recent(source.uri);if(recent<0)return 9;if(recent>0)return 0;
-    if(SourceManager.hasContinuousPlaybackObservation(context,source.uri))return 0;
-    if(SourceManager.hasDevelopmentPlaybackObservation(source.uri))return 1;
-    return 2;
+    Integer cached=sourceRanks.get(source.uri);if(cached!=null)return cached;
+    int recent=new LineHealthStore(context).recent(source.uri);
+    int rank=recent<0?9:recent>0||SourceManager.hasContinuousPlaybackObservation(context,source.uri)?0:
+        SourceManager.hasDevelopmentPlaybackObservation(source.uri)?1:2;
+    sourceRanks.put(source.uri,rank);return rank;
   }
-  int channelRank(Catalog.Channel channel){return playbackChannel(channel).sources.stream().mapToInt(this::sourceRank).min().orElse(3);}
+  int channelRank(Catalog.Channel channel){return stationRanks.getOrDefault(stationKey(channel),3);}
 
   boolean matchesCategory(String channelId, String category) {
     if ("卡通少兒".equals(category)) {
