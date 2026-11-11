@@ -1,0 +1,25 @@
+plugins { id 'com.android.library' }
+def nativeEnabled = providers.gradleProperty('withLocalLlm').getOrElse('true').toBoolean()
+android {
+    namespace 'com.harbour.llm'
+    compileSdk 35
+    ndkVersion '27.2.12479018'
+    defaultConfig {
+        minSdk 26
+        if (nativeEnabled) { ndk { abiFilters 'arm64-v8a', 'x86_64' } }
+        if (nativeEnabled) { externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_STL=c++_shared', '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON', '-DCMAKE_BUILD_TYPE=Release'
+                if (project.hasProperty('llamaSourceDir')) {
+                    arguments "-DLLAMA_SOURCE_DIR=${project.property('llamaSourceDir')}"
+                }
+            }
+        }
+        }
+        consumerProguardFiles 'consumer-rules.pro'
+    }
+    if (nativeEnabled) { externalNativeBuild { cmake { path 'src/main/cpp/CMakeLists.txt'; version '3.22.1' } } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    testOptions { unitTests.includeAndroidResources = true }
+}
+dependencies { testImplementation 'junit:junit:4.13.2' }

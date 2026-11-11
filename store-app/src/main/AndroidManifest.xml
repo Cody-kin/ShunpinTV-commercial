@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="com.harbour.enginelab.permission.PLAY" />
+    <queries><package android:name="com.harbour.enginelab" />
+      <intent><action android:name="android.intent.action.OPEN_DOCUMENT" /><category android:name="android.intent.category.OPENABLE" /><data android:mimeType="*/*" /></intent>
+      <intent><action android:name="android.intent.action.CREATE_DOCUMENT" /><category android:name="android.intent.category.OPENABLE" /><data android:mimeType="audio/x-mpegurl" /></intent>
+    </queries>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-feature android:name="android.software.leanback" android:required="true" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <application android:allowBackup="false" android:dataExtractionRules="@xml/data_extraction_rules" android:usesCleartextTraffic="false" android:networkSecurityConfig="@xml/network_security_store"
+        android:label="瞬頻 TV 商業預覽" android:theme="@style/AppTheme"
+        android:icon="@drawable/tv_icon" android:banner="@drawable/tv_banner"
+        android:supportsRtl="true">
+        <activity android:name=".LineRepairActivity" android:exported="false" android:screenOrientation="landscape" tools:ignore="DiscouragedApi" />
+        <activity android:name=".ReplayActivity" android:exported="false" android:screenOrientation="landscape" tools:ignore="DiscouragedApi" />
+        <activity android:name=".CctvGuideActivity" android:exported="false" android:screenOrientation="landscape" tools:ignore="DiscouragedApi" />
+        <activity android:name=".OfficialWebActivity" android:exported="false" android:screenOrientation="landscape" tools:ignore="DiscouragedApi" />
+        <activity android:name=".LocalUserCenterActivity" android:exported="false" android:screenOrientation="landscape" tools:ignore="DiscouragedApi" />
+        <activity android:name=".ChannelLibraryActivity" android:exported="false" android:screenOrientation="landscape" tools:ignore="DiscouragedApi" />
+        <activity android:name=".LocalCommandActivity" android:exported="false" android:screenOrientation="landscape" tools:ignore="DiscouragedApi" />
+        <activity android:name=".ModelReadinessActivity" android:exported="false" android:screenOrientation="landscape" tools:ignore="DiscouragedApi" />
+        <activity android:name=".LocalModelActivity" android:exported="false" android:screenOrientation="landscape" tools:ignore="DiscouragedApi" />
+        <activity android:name=".SourceBindingActivity" android:exported="false" android:screenOrientation="landscape" tools:ignore="DiscouragedApi" />
+        <activity android:name=".OfficialDramaPlayerActivity" android:exported="false" android:screenOrientation="landscape" tools:ignore="DiscouragedApi" />
+        <activity android:name=".PublicDramaActivity" android:exported="false" android:screenOrientation="landscape" tools:ignore="DiscouragedApi" />
+        <activity android:name=".OfficialServicesActivity" android:exported="false" android:screenOrientation="landscape" tools:ignore="DiscouragedApi" />
+        <!-- Leanback-only app: landscape TV display, not a resizable phone app. -->
+        <activity tools:ignore="DiscouragedApi" android:name=".MainActivity" android:exported="true" android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

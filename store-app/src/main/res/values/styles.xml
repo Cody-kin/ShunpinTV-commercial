@@ -1,0 +1,32 @@
+<resources>
+    <style name="AppTheme" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:alertDialogTheme">@style/ShunpinDialogTheme</item>
+        <item name="android:colorAccent">#61E6CC</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowBackground">#08131F</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
+    <style name="ShunpinDialogTheme" parent="android:style/Theme.Material.Dialog.Alert">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#61E6CC</item>
+        <item name="android:colorBackground">#142237</item>
+        <item name="android:colorBackgroundFloating">#142237</item>
+        <item name="android:windowBackground">@drawable/dialog_surface</item>
+        <item name="android:textColorPrimary">#F4F7FC</item>
+        <item name="android:textColorSecondary">#A8BACB</item>
+        <item name="android:buttonBarPositiveButtonStyle">@style/ShunpinDialogAction</item>
+        <item name="android:buttonBarNegativeButtonStyle">@style/ShunpinDialogAction</item>
+        <item name="android:buttonBarNeutralButtonStyle">@style/ShunpinDialogAction</item>
+    </style>
+    <style name="ShunpinDialogAction" parent="android:style/Widget.Material.Button.Borderless">
+        <item name="android:background">@drawable/dialog_action</item>
+        <item name="android:textColor">@color/dialog_action_text</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:minWidth">80dp</item>
+        <item name="android:paddingLeft">16dp</item>
+        <item name="android:paddingRight">16dp</item>
+    </style>
+</resources>

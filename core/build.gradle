@@ -1,0 +1,24 @@
+plugins { id 'java-library' }
+java { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
+tasks.register('verifyCore', JavaExec) { dependsOn testClasses; classpath = sourceSets.test.runtimeClasspath; mainClass = 'com.harbour.core.CoreTests' }
+
+tasks.register('verifySources', JavaExec) { dependsOn testClasses; classpath = sourceSets.test.runtimeClasspath; mainClass = 'com.harbour.core.M3uPlaylistTests' }
+tasks.named('check') { dependsOn 'verifySources' }
+
+tasks.register('verifyFolders', JavaExec) { dependsOn testClasses; classpath = sourceSets.test.runtimeClasspath; mainClass = 'com.harbour.core.ChannelFoldersTests'; enableAssertions = true }
+tasks.register('verifyCommands', JavaExec) { dependsOn testClasses; classpath = sourceSets.test.runtimeClasspath; mainClass = 'com.harbour.core.LocalCommandTests'; enableAssertions = true }
+
+tasks.register('verifySearch', JavaExec) { dependsOn testClasses; classpath = sourceSets.test.runtimeClasspath; mainClass = 'com.harbour.core.SourceSearchLinksTests'; enableAssertions = true }
+tasks.named('check') { dependsOn 'verifyCore', 'verifyFolders', 'verifyCommands', 'verifySearch' }
+
+tasks.register('verifyHttps', JavaExec) { dependsOn testClasses; classpath = sourceSets.test.runtimeClasspath; mainClass = 'com.harbour.core.HttpsPlaylistFetcherTests'; enableAssertions = true }
+tasks.named('check') { dependsOn 'verifyHttps' }
+
+tasks.register('verifyOfficialPages', JavaExec) { dependsOn testClasses; classpath = sourceSets.test.runtimeClasspath; mainClass = 'com.harbour.core.OfficialPageAdapterTests'; enableAssertions = true }
+tasks.named('check') { dependsOn 'verifyOfficialPages' }
+
+tasks.register('verifyCctvGuide', JavaExec) { dependsOn testClasses; classpath = sourceSets.test.runtimeClasspath; mainClass = 'com.harbour.core.CctvGuideTests'; enableAssertions = true }
+tasks.named('check') { dependsOn 'verifyCctvGuide' }
+
+tasks.register('verifyDramaSelection', JavaExec) { dependsOn testClasses; classpath = sourceSets.test.runtimeClasspath; mainClass = 'com.harbour.core.PublicDramaSelectionTests' }
+tasks.named('check') { dependsOn 'verifyDramaSelection' }

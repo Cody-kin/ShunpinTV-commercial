@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "channels": [
+    {
+      "id": "store-empty",
+      "number": "0",
+      "name": "匯入你的直播來源",
+      "category": "ALL",
+      "language": "zh",
+      "description": "商業預覽不預裝電視頻道或廣告。",
+      "accent": "#25BFA3",
+      "sources": []
+    }
+  ],
+  "programs": [],
+  "provider": "User supplied sources",
+  "sourceReference": "Local imports only",
+  "updatedAt": "2026-11-11T00:00:00Z"
+}
