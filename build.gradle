@@ -1,1 +1,14 @@
 plugins { id 'com.android.application' version '8.7.3' apply false }
+
+// Keep generated classes/dex out of Documents on macOS. Duplicate " 2.class"
+// copies in the old output tree contain the same JVM names and break D8.
+// Android Studio reads these directories from the Gradle model after Sync.
+if (System.getProperty('os.name').toLowerCase(java.util.Locale.ROOT).contains('mac')) {
+    def checkoutKey = java.security.MessageDigest.getInstance('SHA-256')
+        .digest(rootDir.canonicalPath.getBytes('UTF-8')).encodeHex().toString().substring(0, 12)
+    def outputRoot = new File(System.getProperty('user.home'), "Library/Caches/ShunpinTV/gradle-build/${checkoutKey}")
+    allprojects {
+        def modulePath = project.path == ':' ? 'root' : project.path.substring(1).replace(':', '/')
+        layout.buildDirectory.set(new File(outputRoot, modulePath))
+    }
+}
