@@ -98,7 +98,7 @@ final class PlaybackController {
                 new LineHealthStore(appContext).record(sources.get(sourceIndex).uri,false);
                 fail(RecoveryPolicy.Fault.UNSTABLE);return;
               }
-              cancelWatchdog();
+              if(!firstFrame && desiredPlay)armWatchdog();else cancelWatchdog();
               observer.onStatus(
                   !desiredPlay
                       ? "已暫停 · 按 OK 開啟選單繼續"
@@ -131,7 +131,7 @@ final class PlaybackController {
             if (!firstFrame && !closed) {
               firstFrame = true;
               if(channel!=null)new LineHealthStore(appContext).channelFailed(channel.id,false);
-              if (desiredPlay && player.getPlaybackState() == Player.STATE_BUFFERING) armWatchdog();
+              if (desiredPlay && player.getPlaybackState() == Player.STATE_BUFFERING) armWatchdog();else cancelWatchdog();
               observer.onFirstFrame(SystemClock.elapsedRealtime() - startedAt);
             }
           }
@@ -301,17 +301,21 @@ final class PlaybackController {
     final int expected = generation;
     final boolean startup = !firstFrame;
     final long armedAt = SystemClock.elapsedRealtime();
-    final long timeoutMs = startup ? BuildConfig.STARTUP_TIMEOUT_MS : 15000L;
+    final long timeoutMs = startup ? Math.max(1, (sourceIndex+1<sources.size()?15000L:BuildConfig.STARTUP_TIMEOUT_MS) - (armedAt-startedAt)) : 15000L;
     timeout =
         () -> {
           timeout = null;
           if (!closed
               && !terminal
               && generation == expected
-              && player.getPlaybackState() == Player.STATE_BUFFERING) {
+              && desiredPlay
+              && (startup ? !firstFrame : player.getPlaybackState() == Player.STATE_BUFFERING)) {
             android.util.Log.w("ShunpinPlayback", "watchdog phase=" + (startup ? "startup" : "rebuffer")
                 + " elapsedMs=" + (SystemClock.elapsedRealtime() - armedAt));
-            fail(RecoveryPolicy.Fault.TRANSIENT);
+            if(startup && sourceIndex+1<sources.size()) {
+              new LineHealthStore(appContext).record(sources.get(sourceIndex).uri,false);
+              fail(RecoveryPolicy.Fault.UNSTABLE);
+            } else fail(RecoveryPolicy.Fault.TRANSIENT);
           }
         };
     handler.postDelayed(timeout, timeoutMs);

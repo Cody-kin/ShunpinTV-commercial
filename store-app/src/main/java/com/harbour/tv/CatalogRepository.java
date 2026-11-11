@@ -149,6 +149,11 @@ final class CatalogRepository {
       if(normalized.equals("北京卡酷少儿")||normalized.equals("BRTVKAKUCHILDRENSCHANNEL")||normalized.equals("卡酷动画"))normalized="卡酷少儿";
       if(normalized.equals("湖南金鹰卡通")||normalized.equals("GOLDENEAGLECARTOON"))normalized="金鹰卡通";
       if(normalized.equals("YOUMANCARTOON"))normalized="优漫卡通";
+      String alias=normalized.replaceAll("\\((?:[0-9]+[PI]|HD|SD)\\)", "").replace("[GEO-BLOCKED]", "");
+      if(alias.equals("PHOENIXCHINESECHANNEL")||alias.equals("凤凰中文")||alias.equals("凤凰中文台")||alias.equals("鳳凰中文台"))normalized="凤凰中文";
+      if(alias.equals("PHOENIXINFONEWSCHANNEL")||alias.equals("凤凰资讯")||alias.equals("凤凰资讯台")||alias.equals("鳳凰資訊台"))normalized="凤凰资讯";
+      if(alias.matches("RTHKTV3[1-5]"))normalized=alias;
+
       return normalized.isEmpty()?c.id:"station-name-"+normalized;
     }
     if(name.contains("4K") || name.contains("8K") || name.contains("EUROPE") || name.contains("AMERICA"))return c.id;

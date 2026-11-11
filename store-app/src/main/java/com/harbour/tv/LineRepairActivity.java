@@ -53,10 +53,11 @@ public final class LineRepairActivity extends Activity {
   }catch(InterruptedException e){Thread.currentThread().interrupt();message("已停止。");}catch(Exception e){message("檢查未完成；原有清單保留。可重試。");}finally{ui.post(()->{release();if(!isDestroyed()){check.setEnabled(true);repair.setEnabled(true);setResult(RESULT_OK);}});}});
  }
  private void refreshSubscriptions() throws Exception {
+  if(BuildConfig.PERSONAL_BUILD&&!cancelled)try{RegionalSubscriptions.refresh(this,true);}catch(Exception ignored){message("香港訂閱更新失敗，保留原有清單…");}
   if(BuildConfig.PERSONAL_BUILD)try{RequestedCctvSubscription.refreshAll(this,url->{if(cancelled||Thread.currentThread().isInterrupted())throw new InterruptedException();return HttpsPlaylistFetcher.fetch(url).text;});}catch(Exception ignored){message("預置訂閱更新失敗，保留舊清單，繼續檢查其他訂閱…");}
   if(cancelled||Thread.currentThread().isInterrupted())throw new InterruptedException();
   PlaylistSubscriptions store=new PlaylistSubscriptions(this);JSONArray batches=store.batches();
-  for(int i=0;i<batches.length();i++){if(cancelled||Thread.currentThread().isInterrupted())throw new InterruptedException();JSONObject b=batches.getJSONObject(i);String url=b.optString("url");if(!url.startsWith("https://")||url.contains("best-fan/iptv-sources"))continue;
+  for(int i=0;i<batches.length();i++){if(cancelled||Thread.currentThread().isInterrupted())throw new InterruptedException();JSONObject b=batches.getJSONObject(i);String url=b.optString("url");if(!url.startsWith("https://")||url.contains("best-fan/iptv-sources")||(BuildConfig.PERSONAL_BUILD&&RegionalSubscriptions.HK.equals(url)))continue;
    try{HttpsPlaylistFetcher.Result fetched=HttpsPlaylistFetcher.fetch(SourceManager.normalizePlaylistUrl(url));store.replace(b.getString("id"),url,b.getString("region"),b.getString("until"),M3uPlaylist.parseFromUrl(fetched.text,fetched.finalUrl));}catch(Exception ignored){/* Keep this subscription unchanged. */}
   }
  }

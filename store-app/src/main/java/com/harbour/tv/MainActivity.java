@@ -115,10 +115,11 @@ public final class MainActivity extends Activity {
     new Thread(()->{
       boolean ok=false;
       try{RequestedCctvSubscription.refreshAll(getApplicationContext());ok=true;}catch(Exception ignored){/* Atomic store retains last catalogue. */}
+      try{RegionalSubscriptions.refresh(getApplicationContext(),manual);ok=true;}catch(Exception ignored){}
       final boolean success=ok;
       prefs.edit().putBoolean("cctv_last_update_ok",ok).putLong("cctv_last_update_attempt",System.currentTimeMillis()).apply();
       runOnUiThread(()->{if(isFinishing()||isDestroyed())return;
-        android.widget.Toast.makeText(this,success?"八份直播片單已更新 · 首頁直播片單可選台":"直播片單更新失敗，保留上次清單 · 可手動重試",android.widget.Toast.LENGTH_LONG).show();
+        android.widget.Toast.makeText(this,success?"直播訂閱更新完成 · 個別來源結果可在來源管理查看":"直播片單更新失敗，保留上次清單 · 可手動重試",android.widget.Toast.LENGTH_LONG).show();
         if(success)refreshCatalog(false);
       });
     },"requested-cctv-refresh").start();
