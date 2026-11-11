@@ -441,7 +441,7 @@ public final class SourceManager {
         + "\n" + uris.size() + " 個不同頻道 · " + groups.size() + " 個分組\n"
         + android.text.TextUtils.join("、", new ArrayList<>(groups).subList(0, Math.min(8, groups.size()))) + (groups.size() > 8 ? "…" : "")
         + (batchId == null ? "" : "\n更新只取代此訂閱；保留相同網址的頻道 ID。已排除 " + excluded + " 個網址。")
-        + "\nHTTPS " + compatible + " 個；其他協定 " + (incoming.size() - compatible) + " 個。個人版 HTTP 預設開啟，可在首頁設定統一關閉；不支援的協定仍不能播放。"
+        + "\nHTTPS " + compatible + " 個；其他協定 " + (incoming.size() - compatible) + " 個。" + (BuildConfig.PERSONAL_BUILD ? "個人版 HTTP 預設開啟，可在首頁設定統一關閉；不支援的協定仍不能播放。" : "商業預覽僅支援 HTTPS 播放，HTTP 條目可整理但無法播放。")
         + "\n只讀取清單，尚未測試頻道播放。"));
     EditText region = new EditText(activity);
     region.setSingleLine(true);
